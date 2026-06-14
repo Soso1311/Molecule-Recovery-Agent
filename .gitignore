@@ -1,14 +1,12 @@
-# Environments
+.env
 venv/
 env/
-
-# Python Cache
 __pycache__/
 *.pyc
 *.pyo
-
-# Mac OS
+dist/
+build/
+*.egg-info/
 .DS_Store
-
-# Environment Variables (Keep secrets local)
-.env
+.vscode/
+.idea/
