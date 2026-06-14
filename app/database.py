@@ -1,9 +1,14 @@
+import os
 from sqlmodel import SQLModel, Field, create_engine, Session
 from datetime import datetime
 from typing import Optional
+from dotenv import load_dotenv
 
-DATABASE_URL = "postgresql+psycopg://postgres:password@localhost:5432/alchemi_db"
+load_dotenv()
+
+DATABASE_URL = os.environ["DATABASE_URL"]
 engine = create_engine(DATABASE_URL, echo=False)
+
 
 class AuditLog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -11,7 +16,8 @@ class AuditLog(SQLModel, table=True):
     target_gene: str
     active_smiles: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    mhra_status: str
+    status: str
+
 
 def init_db():
     SQLModel.metadata.create_all(engine)
