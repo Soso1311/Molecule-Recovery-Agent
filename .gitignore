@@ -1,0 +1,14 @@
+# Environments
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac OS
+.DS_Store
+
+# Environment Variables (Keep secrets local)
+.env

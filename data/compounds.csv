@@ -1,0 +1,4 @@
+smiles,compound_id,target_protein
+CC(=O)NC1=CC=C(O)C=C1,COMP-001,COX-2
+CN1C=NC2=C1C(=O)N(C)C(=O)N2C,COMP-002,Adenosine-A2A
+CC1=CC=C(C=C1)C2=CC(=NN2C3=CC=C(C=C3)S(=O)(=O)N)C(F)(F)F,COMP-003,COX-2
