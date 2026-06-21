@@ -11,7 +11,7 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 
-# Resolve path relative to this file so it works regardless of cwd
+# The following updates the resolve path relative to this file so it works regardless of cwd which was a critical error in Sumaiya's claude response.
 _DEFAULT_CSV = Path(__file__).parent.parent / "data" / "compounds.csv"
 
 
