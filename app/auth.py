@@ -1,8 +1,9 @@
 import os
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from passlib.context import CryptContext
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,21 +13,33 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", 8))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Swap this out for a DB lookup with hashed passwords in production
-USERS = {
-    "researcher_a": "changeme123",
-}
+# Users are stored as bcrypt hashes — never plaintext.
+# Generate a hash: python -c "from passlib.context import CryptContext; print(CryptContext(['bcrypt']).hash('yourpassword'))"
+# Then set RESEARCHER_A_HASH in your .env
+_USERS: dict[str, str] = {}
 
 
-def _get_user(username: str, password: str) -> bool:
-    return USERS.get(username) == password
+def _load_users() -> None:
+    """Populate the in-process user table from environment variables at startup."""
+    for key, value in os.environ.items():
+        if key.endswith("_HASH") and value.startswith("$2"):
+            username = key[: -len("_HASH")].lower()
+            _USERS[username] = value
+
+
+def _verify_user(username: str, password: str) -> bool:
+    hashed = _USERS.get(username)
+    if not hashed:
+        return False
+    return pwd_context.verify(password, hashed)
 
 
 def create_access_token(sub: str) -> str:
     payload = {
         "sub": sub,
-        "exp": datetime.utcnow() + timedelta(hours=EXPIRE_HOURS),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=EXPIRE_HOURS),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -45,7 +58,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
 
 def login(form: OAuth2PasswordRequestForm = Depends()):
-    if not _get_user(form.username, form.password):
+    if not _verify_user(form.username, form.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password.",
