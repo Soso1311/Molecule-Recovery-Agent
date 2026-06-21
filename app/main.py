@@ -32,12 +32,12 @@ app = FastAPI(
 app.post("/token")(login)
 
 
-# ── Request / Response models ──────────────────────────────────────────────────
+# The Response Models:
 
 class RecoveryRequest(BaseModel):
     target_gene: str
     active_smiles: str
-    failed_excipient_smiles: list[str] = []  # wired through to response for future processing
+    failed_excipient_smiles: list[str] = []  # it's all wired through to response for future processing
 
 
 class TaskStatus(BaseModel):
@@ -46,7 +46,7 @@ class TaskStatus(BaseModel):
     result: dict | None = None
 
 
-# ── Endpoints ──────────────────────────────────────────────────────────────────
+# The Endpoints
 
 @app.post("/api/v1/recover")
 def recover_formulation(
