@@ -15,7 +15,7 @@ EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", 8))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Users are stored as bcrypt hashes — never plaintext.
+# Users are now updated to be stored as bcrypt hashes and not plaintext as previously outlined by Sumaiya's claude reply.
 # Generate a hash: python -c "from passlib.context import CryptContext; print(CryptContext(['bcrypt']).hash('yourpassword'))"
 # Then set RESEARCHER_A_HASH in your .env
 _USERS: dict[str, str] = {}
