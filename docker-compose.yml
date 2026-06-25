@@ -7,32 +7,73 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-dev}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
       POSTGRES_DB: ${POSTGRES_DB:-molecule_recovery}
-    ports:
-      - "5432:5432"
+# Does NOT expose 5432 to the host network anymore and the database is now only reachable from within the Docker network.  
+# Uncomment the block below if you needed direct psql access from your workstation for debugging.
+    # ports:
+    #   - "127.0.0.1:5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-molecule_recovery}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    # Do NOT expose 6379 to the host network as Redis has no auth by default.
+    # ports:
+    #   - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   api:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # --reload is a dev-only flag that watches the filesystem and disables
+    # optimisations. Use workers instead for production throughput.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     ports:
       - "8000:8000"
     env_file: .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy # Wait for Postgres to be ready, not just started.
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   worker:
     build: .
-    command: celery -A app.worker.celery_app worker --loglevel=info
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=2
     env_file: .env
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          # RDKit conformer generation is memory-hungry and the cap is set at 1 GB per worker.
+          memory: 1g
 
 volumes:
   pg_data:
